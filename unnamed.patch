@@ -1,0 +1,248 @@
+Index: src/main/java/com/example/demo/websocket/WebSocketConfig.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/example/demo/websocket/WebSocketConfig.java	(revision e85fe4439bedd3c264c48a6aa24d2f999bbc9bda)
++++ src/main/java/com/example/demo/websocket/WebSocketConfig.java	(date 1587130580287)
+@@ -6,8 +6,10 @@
+ 
+ @Configuration
+ public class WebSocketConfig {
++
+     @Bean
+     public ServerEndpointExporter serverEndpointExporter() {
++
+         return new ServerEndpointExporter();
+     }
+ }
+Index: src/main/java/com/example/demo/DemoApplication.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/example/demo/DemoApplication.java	(revision e85fe4439bedd3c264c48a6aa24d2f999bbc9bda)
++++ src/main/java/com/example/demo/DemoApplication.java	(date 1587029450430)
+@@ -2,8 +2,10 @@
+ 
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.scheduling.annotation.EnableScheduling;
+ 
+ @SpringBootApplication
++@EnableScheduling
+ public class DemoApplication {
+ 
+     public static void main(String[] args) {
+Index: src/main/resources/application.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/application.properties	(revision e85fe4439bedd3c264c48a6aa24d2f999bbc9bda)
++++ src/main/resources/application.properties	(date 1587031201255)
+@@ -1,3 +1,4 @@
+ server.address=0.0.0.0
+ server.port=8888
+-logging.level.root=INFO
+\ No newline at end of file
++logging.level.root=INFO
++
+Index: src/main/java/com/example/demo/websocket/WebSocketServer.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/example/demo/websocket/WebSocketServer.java	(revision e85fe4439bedd3c264c48a6aa24d2f999bbc9bda)
++++ src/main/java/com/example/demo/websocket/WebSocketServer.java	(date 1587137233501)
+@@ -34,19 +34,25 @@
+     /**
+      * 静态变量，用来记录拨号
+      */
+-    private static ArrayList<WebSocketServer> bb =new ArrayList<>()  ;
++    private static WebSocketServer bb   ;
++    private static WebSocketServer bb1  ;
+ 
+     /**
+      * 连接建立成功调用的方法
+      **/
+     @OnOpen
+     public void onOpen(Session session, @PathParam("sid") String sid) {
++        //设置消息区大小
++        session.setMaxTextMessageBufferSize(10888);
+         this.session = session;
+         //加入set中
+         webSocketSet.add(this);
+-        if(sid.equals("1")){
+-            bb.add(this);
++        if(sid.equals("tongxin1")){
+ 
++            bb=this;
++
++        }else if(sid.equals("tongxin2")){
++            bb1=this;
+         }
+ 
+         //在线数加1
+@@ -76,15 +82,33 @@
+      **/
+     @OnMessage
+     public void onMessage(String message, Session session) {
+-        System.out.println("收到来自窗口"+sid+"的信息:"+message+"----"+session);
++        System.out.println("收到来自窗口"+sid+"的信息:"+message);
+ 
+ 
+-        if (sid.equals("1") ) {
++        if (sid.equals("tongxin1") ) {
++            String[]  data ;
++            //如果是拨号服务器返回的数据
++            data = message.split("//");
++            //号码返回给发送者
++            for (WebSocketServer item : webSocketSet) {
++                try {
++                    //这里可以设定只推送给这个sid的，为null则全部推送
++                    if(sid==null) {
++                        item.sendMessage(message);
++                    }else if(item.sid.equals(data[0])){
++                        //客户端返回来的数据发送给拨号服务器
++//                        data date =new data();
++                        item.sendMessage(data[1]);
++                    }
++                } catch (IOException e) {
++                    continue;
++                }
++            }
++        }else if (sid.equals("tongxin2") ) {
+             String[]  data ;
+             //如果是拨号服务器返回的数据
+-            data = message.split(",");
+-            System.out.println("就这里");
+-
++            data = message.split("//");
++            //号码返回给发送者
+             for (WebSocketServer item : webSocketSet) {
+                 try {
+                     //这里可以设定只推送给这个sid的，为null则全部推送
+@@ -92,6 +116,7 @@
+                         item.sendMessage(message);
+                     }else if(item.sid.equals(data[0])){
+                         //客户端返回来的数据发送给拨号服务器
++//                        data date =new data();
+                         item.sendMessage(data[1]);
+                     }
+                 } catch (IOException e) {
+@@ -108,14 +133,19 @@
+                         item.sendMessage(message);
+                     }else if(item.sid.equals(sid)){
+                         //客户端返回来的数据发送给拨号服务器
+-                        bb.get(0).sendMessage(sid+","+message);
++
++                        if (ip.num == 1) {
++                            bb.sendMessage(sid + "," + message);
++                        } else if(ip.num == 2){
++                            bb1.sendMessage(sid + "," + message);
++                        }
+                     }
+                 } catch (IOException e) {
+                     continue;
+                 }
+             }
+-
+         }
++
+ 
+ 
+ //        //群发消息
+Index: src/main/java/com/example/demo/websocket/dataee.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/example/demo/websocket/dataee.java	(date 1587115821652)
++++ src/main/java/com/example/demo/websocket/dataee.java	(date 1587115821652)
+@@ -0,0 +1,21 @@
++package com.example.demo.websocket;
++
++import com.alibaba.fastjson.JSON;
++
++import java.util.Map;
++
++public class dataee {
++
++
++    public static String data(String pho) {
++        String phoes = "";
++        String  aa =pho.substring( pho.indexOf("{") + 1, pho.lastIndexOf("}"));
++        String  bb ="{"+aa+"}";
++        Map maps = (Map) JSON.parse(bb);
++
++        if(maps.get("code").equals("M0")){
++            phoes = String.valueOf(maps.get("numArray"));
++        }
++        return phoes;
++    }
++}
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(revision e85fe4439bedd3c264c48a6aa24d2f999bbc9bda)
++++ pom.xml	(date 1587131136514)
+@@ -28,7 +28,12 @@
+ 			<groupId>org.springframework.boot</groupId>
+ 			<artifactId>spring-boot-starter-websocket</artifactId>
+ 		</dependency>
+-
++<!--		处理josn-->
++		<dependency>
++			<groupId>com.alibaba</groupId>
++			<artifactId>fastjson</artifactId>
++			<version>1.2.47</version>
++		</dependency>
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.boot</groupId>
+@@ -41,6 +46,8 @@
+ 				</exclusion>
+ 			</exclusions>
+ 		</dependency>
++
++
+ 	</dependencies>
+ 
+ 	<build>
+Index: src/main/java/com/example/demo/websocket/ip.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/example/demo/websocket/ip.java	(date 1587086904604)
++++ src/main/java/com/example/demo/websocket/ip.java	(date 1587086904604)
+@@ -0,0 +1,26 @@
++package com.example.demo.websocket;
++
++import org.springframework.scheduling.annotation.Async;
++import org.springframework.scheduling.annotation.Scheduled;
++import org.springframework.stereotype.Component;
++
++@Component
++public class ip {
++    public static int num;
++
++    //提前五分钟转换拨号服务器
++    @Async
++    @Scheduled(cron = "55 * * * * *")
++    public void ip() {
++        System.out.println("一号");
++        num = 1;
++    }
++
++
++    @Async
++    @Scheduled(cron = "25 * * * * *")
++    public void ip2() {
++        System.out.println("二号");
++        num = 2;
++    }
++}

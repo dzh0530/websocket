@@ -34,19 +34,25 @@ public class WebSocketServer {
     /**
      * 静态变量，用来记录拨号
      */
-    private static ArrayList<WebSocketServer> bb =new ArrayList<>()  ;
+    private static WebSocketServer bb   ;
+    private static WebSocketServer bb1  ;
 
     /**
      * 连接建立成功调用的方法
      **/
     @OnOpen
     public void onOpen(Session session, @PathParam("sid") String sid) {
+        //设置消息区大小
+        session.setMaxTextMessageBufferSize(10888);
         this.session = session;
         //加入set中
         webSocketSet.add(this);
-        if(sid.equals("1")){
-            bb.add(this);
+        if(sid.equals("tongxin1")){
 
+            bb=this;
+
+        }else if(sid.equals("tongxin2")){
+            bb1=this;
         }
 
         //在线数加1
@@ -76,15 +82,14 @@ public class WebSocketServer {
      **/
     @OnMessage
     public void onMessage(String message, Session session) {
-        System.out.println("收到来自窗口"+sid+"的信息:"+message+"----"+session);
+        System.out.println("收到来自窗口"+sid+"的信息:"+message);
 
 
-        if (sid.equals("1") ) {
+        if (sid.equals("tongxin1") ) {
             String[]  data ;
             //如果是拨号服务器返回的数据
-            data = message.split(",");
-            System.out.println("就这里");
-
+            data = message.split("//");
+            //号码返回给发送者
             for (WebSocketServer item : webSocketSet) {
                 try {
                     //这里可以设定只推送给这个sid的，为null则全部推送
@@ -92,6 +97,26 @@ public class WebSocketServer {
                         item.sendMessage(message);
                     }else if(item.sid.equals(data[0])){
                         //客户端返回来的数据发送给拨号服务器
+//                        data date =new data();
+                        item.sendMessage(data[1]);
+                    }
+                } catch (IOException e) {
+                    continue;
+                }
+            }
+        }else if (sid.equals("tongxin2") ) {
+            String[]  data ;
+            //如果是拨号服务器返回的数据
+            data = message.split("//");
+            //号码返回给发送者
+            for (WebSocketServer item : webSocketSet) {
+                try {
+                    //这里可以设定只推送给这个sid的，为null则全部推送
+                    if(sid==null) {
+                        item.sendMessage(message);
+                    }else if(item.sid.equals(data[0])){
+                        //客户端返回来的数据发送给拨号服务器
+//                        data date =new data();
                         item.sendMessage(data[1]);
                     }
                 } catch (IOException e) {
@@ -108,14 +133,19 @@ public class WebSocketServer {
                         item.sendMessage(message);
                     }else if(item.sid.equals(sid)){
                         //客户端返回来的数据发送给拨号服务器
-                        bb.get(0).sendMessage(sid+","+message);
+
+                        if (ip.num == 1) {
+                            bb.sendMessage(sid + "," + message);
+                        } else if(ip.num == 2){
+                            bb1.sendMessage(sid + "," + message);
+                        }
                     }
                 } catch (IOException e) {
                     continue;
                 }
             }
-
         }
+
 
 
 //        //群发消息
